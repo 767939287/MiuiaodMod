@@ -12,8 +12,8 @@ android {
         applicationId = "cn.darknight.miuiaodmod"
         minSdk = 35
         targetSdk = 37
-        versionCode = 18
-        versionName = "0.8.1"
+        versionCode = 19
+        versionName = "0.9.0"
     }
 
     val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
