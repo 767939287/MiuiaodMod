@@ -12,8 +12,8 @@ android {
         applicationId = "cn.darknight.miuiaodmod"
         minSdk = 35
         targetSdk = 37
-        versionCode = 20
-        versionName = "0.9.1"
+        versionCode = 21
+        versionName = "0.9.2"
     }
 
     // GitHub Actions 未配置的 secret 会传空字符串，必须同时处理 null 与 blank。
