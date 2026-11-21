@@ -45,22 +45,28 @@ android {
             isUniversalApk = false
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     packaging {
         resources {
             merges += listOf("META-INF/xposed/*")
+            excludes += "**"
         }
         dex {
             useLegacyPackaging = true
         }
     }
+
+    lint {
+        abortOnError = true
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {
-    implementation(project(":hook"))
-
-    testImplementation(libs.junit)
+    compileOnly(libs.libxposed.api)
 }

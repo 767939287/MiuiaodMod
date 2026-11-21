@@ -3,15 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- 无 UI 纯功能模块：只提供 LSPosed 模块元数据（META-INF/xposed/*），
-         不注册 Activity / Service / Receiver，也不需要包名可见性权限。 -->
+         不注册 Activity / Service / Receiver，安装后桌面无图标。 -->
 
     <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true" />
+        android:label="MiuiaodMod"
+        android:description="@android:string/unknownName"
+        android:theme="@android:style/Theme.DeviceDefault"
+        tools:ignore="MissingApplicationIcon" />
 
 </manifest>
