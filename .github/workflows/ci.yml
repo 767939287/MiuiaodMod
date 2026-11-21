@@ -149,3 +149,5 @@ jobs:
           Write-Host "版本号: ${{ steps.generate_ci_version.outputs.ci_version }}"
           Write-Host "构建产物已上传至 Actions Artifacts"
         shell: pwsh
+
+# 触发 GitHub 重新索引 workflow 文件
