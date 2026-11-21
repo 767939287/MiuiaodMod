@@ -1,5 +1,22 @@
 # 更新日志
 
+## 0.9.0
+
+> 发布于 2026-11-21
+
+### 变更
+
+- **架构重建**：迁移到 libxposed/example 官方单模块骸架，移除 `app` + `hook` 双模块结构与全部 Compose / Miuix 界面，模块改为无 UI 纯 hook，安装后桌面无图标。
+- **依赖精简**：仅保留 `compileOnly io.github.libxposed:api:102.0.0`，移除 DexKit、Compose、miuix、commonmark 等全部第三方库。
+- **Hook 入口重写**：`cn.darknight.miuiaodmod.ModuleMain` 直接实现 `XposedModule`；通过 hook `PluginInstance$PluginFactory#createPluginContext` 获取 SystemUI 插件 ClassLoader。
+- **作用域收敛**：`scope.list` 仅保留 `com.android.systemui`。
+- **日志规范**：结构化日志 `event=... result=...` + `LSM-*` 错误码，便于 `adb logcat | grep event=` 过滤。
+- **旧代码归档**：原双模块代码移入 `attic/`，不参与编译，可随时回退。
+
+### 修复
+
+- 修复模块导致 SystemUI 反复崩溃的问题（移除 `ClassLoader.loadClass` 类加载热路径 hook）。
+
 ## 0.8.2
 
 > 发布于 2026-11-21

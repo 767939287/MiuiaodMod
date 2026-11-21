@@ -7,7 +7,7 @@
 
     <application
         android:label="MiuiaodMod"
-        android:description="@android:string/unknownName"
+        android:description="关闭息屏显示的通知光效动画"
         android:theme="@android:style/Theme.DeviceDefault"
         tools:ignore="MissingApplicationIcon" />
 

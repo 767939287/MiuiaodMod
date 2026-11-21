@@ -14,24 +14,27 @@ import java.util.concurrent.atomic.AtomicBoolean
  * 模块入口（libxposed API 102，无 UI 纯 hook）。
  *
  * ## 目标
- * 关闭息屏显示（AOD）在通知到来时播放的光效动画，通知图标照常显示。
+ * 关闭息屏显示（AOD）在通知到来时播放的波纹/粒子光效，通知图标与时钟照常显示。
  *
  * ## 运行进程
  * `com.miui.aod` 的 `DozeService` 实现 `com.android.systemui.plugins.DozeServicePlugin`，
  * 由 SystemUI 以插件形式加载，因此 `com.miui.aod.AODView` 实际运行在
  * **`com.android.systemui`** 进程，类由插件的独立 ClassLoader 持有。
+ * 所以 `scope.list` 只需要 `com.android.systemui`。
  *
  * ## 获取插件 ClassLoader（主路径）
  * hook SystemUI 的 `com.android.systemui.shared.plugins.PluginInstance$PluginFactory`
- * 的 `createPluginContext()`：它的返回值是 `PluginContextWrapper`（ContextWrapper 子类），
+ * 的 `createPluginContext()`：返回值是 `PluginContextWrapper`（ContextWrapper 子类），
  * 内部持有的就是插件 ClassLoader。该方法只在插件加载时调用，**不在任何热路径上**。
- *
- * 该思路参考自 HyperAodZen（AGPL/Apache-2.0 项目，MIUI/HyperOS 上验证过）。
  *
  * ## 安全约束
  * **禁止 hook `ClassLoader.loadClass` / `Class.forName` 等类加载热路径**——此前版本
- * 因此导致 SystemUI 反复崩溃。所有 hook 均设置 `ExceptionMode.PASSTHROUGH`，
- * 回调内部只做日志，不向外抛异常。
+ * 因此导致 SystemUI 崩溃循环。所有 hook 使用 `ExceptionMode.PASSTHROUGH`，
+ * 回调内部只记日志，不向外抛异常。
+ *
+ * ## 日志规范
+ * 采用结构化日志：`event=<事件> result=<ok|fail|skip> [key=value...]`，
+ * 异常路径附带 `LSM-*` 错误码，便于 `adb logcat | grep event=` 过滤。
  */
 class ModuleMain : XposedModule() {
 
@@ -42,12 +45,27 @@ class ModuleMain : XposedModule() {
     private val probing = AtomicBoolean(false)
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
-        log(Log.INFO, TAG, "onModuleLoaded: ${param.processName}")
+        log(
+            Log.INFO,
+            TAG,
+            "event=module_loaded result=ok process=${param.processName} api=$apiVersion",
+        )
     }
 
     override fun onPackageReady(param: PackageReadyParam) {
-        if (param.packageName != SYSTEMUI_PACKAGE) return
-        log(Log.INFO, TAG, "onPackageReady: ${param.packageName}")
+        if (param.packageName != SYSTEMUI_PACKAGE) {
+            log(
+                Log.INFO,
+                TAG,
+                "LSM-SCOPE-001 event=route_skip result=skip reason=package_mismatch package=${param.packageName}",
+            )
+            return
+        }
+        log(
+            Log.INFO,
+            TAG,
+            "event=package_ready result=ok package=${param.packageName} first=${param.isFirstPackage}",
+        )
 
         val handler = Handler(Looper.getMainLooper())
 
@@ -63,23 +81,30 @@ class ModuleMain : XposedModule() {
 
     /** hook `PluginInstance$PluginFactory#createPluginContext()`，从返回值取插件 ClassLoader。 */
     private fun hookPluginFactory(sysLoader: ClassLoader, handler: Handler) {
+        val target = "$PLUGIN_FACTORY#$CREATE_PLUGIN_CONTEXT"
         runCatching {
             val factory = Class.forName(PLUGIN_FACTORY, false, sysLoader)
             val method = factory.getDeclaredMethod(CREATE_PLUGIN_CONTEXT)
-            hook(method).setExceptionMode(ExceptionMode.PASSTHROUGH).intercept { chain ->
-                val result = chain.proceed()
-                try {
-                    val loader = (result as? ContextWrapper)?.classLoader
-                    if (loader != null) scheduleProbe(loader, handler)
-                } catch (t: Throwable) {
-                    log(Log.WARN, TAG, "resolve plugin classloader failed: $t")
+            hook(method)
+                .setId(HOOK_ID_PLUGIN_FACTORY)
+                .setExceptionMode(ExceptionMode.PASSTHROUGH)
+                .intercept { chain ->
+                    val result = chain.proceed()
+                    try {
+                        val loader = (result as? ContextWrapper)?.classLoader
+                        if (loader != null) scheduleProbe(loader, handler)
+                    } catch (t: Throwable) {
+                        log(
+                            Log.WARN,
+                            TAG,
+                            "LSM-HOOK-005 event=hook_fallback result=ok recover=proceed reason=$t",
+                        )
+                    }
+                    result
                 }
-                result
-            }
-        }.onSuccess {
-            log(Log.INFO, TAG, "hook $PLUGIN_FACTORY#$CREATE_PLUGIN_CONTEXT success")
+            log(Log.INFO, TAG, "LSM-HOOK-001 event=install_hook target=$target result=ok hook_id=$HOOK_ID_PLUGIN_FACTORY")
         }.onFailure {
-            log(Log.ERROR, TAG, "hook $PLUGIN_FACTORY#$CREATE_PLUGIN_CONTEXT failed: $it")
+            log(Log.ERROR, TAG, "LSM-HOOK-003 event=install_hook target=$target result=fail reason=$it")
         }
     }
 
@@ -90,10 +115,10 @@ class ModuleMain : XposedModule() {
             if (installed.get()) return@postDelayed
             val clazz = runCatching { Class.forName(AOD_VIEW, false, loader) }.getOrNull()
             if (clazz == null) {
-                log(Log.WARN, TAG, "plugin loader cannot resolve $AOD_VIEW")
+                log(Log.WARN, TAG, "LSM-HOOK-002 event=resolve_class target=$AOD_VIEW result=fail reason=not_found")
                 return@postDelayed
             }
-            log(Log.INFO, TAG, "found $AOD_VIEW via plugin loader $loader")
+            log(Log.INFO, TAG, "event=resolve_class target=$AOD_VIEW result=ok via=$loader")
             install(clazz)
         }, RESOLVE_DELAY_MS)
     }
@@ -105,11 +130,7 @@ class ModuleMain : XposedModule() {
         val task = object : Runnable {
             override fun run() {
                 if (installed.get() || round >= MAX_ROUNDS) {
-                    log(
-                        Log.INFO,
-                        TAG,
-                        "probe finished: installed=${installed.get()}, rounds=$round",
-                    )
+                    log(Log.INFO, TAG, "event=probe_finished result=ok installed=${installed.get()} rounds=$round")
                     return
                 }
                 round++
@@ -118,12 +139,14 @@ class ModuleMain : XposedModule() {
                     val field = injector.getDeclaredField("sClassLoaders")
                     field.isAccessible = true
                     val map = field.get(null) as? Map<*, *> ?: return@runCatching
-                    if (round == 1) log(Log.INFO, TAG, "plugin loaders: ${map.keys}")
+                    if (round == 1) log(Log.INFO, TAG, "event=read_plugin_registry result=ok keys=${map.keys}")
                     for (value in map.values) {
                         (value as? ClassLoader)?.let { probe(it) }
                     }
                 }.onFailure {
-                    if (round == 1) log(Log.INFO, TAG, "read $PLUGIN_INJECTOR failed: $it")
+                    if (round == 1) {
+                        log(Log.WARN, TAG, "LSM-HOOK-006 event=read_plugin_registry result=fail reason=$it")
+                    }
                 }
 
                 runCatching {
@@ -142,21 +165,27 @@ class ModuleMain : XposedModule() {
     private fun probe(loader: ClassLoader) {
         if (installed.get()) return
         val clazz = runCatching { Class.forName(AOD_VIEW, false, loader) }.getOrNull() ?: return
-        log(Log.INFO, TAG, "found $AOD_VIEW via $loader")
+        log(Log.INFO, TAG, "event=resolve_class target=$AOD_VIEW result=ok via=$loader")
         install(clazz)
     }
 
     private fun install(clazz: Class<*>) {
         if (!installed.compareAndSet(false, true)) return
+        val target = "$AOD_VIEW#$SHOW_ANIMATE"
         runCatching {
             val method = clazz.getDeclaredMethod(SHOW_ANIMATE, String::class.java)
-            // 直接返回 null，跳过光效的创建与播放；通知图标由 handleUpdateIcons 负责，不受影响。
-            hook(method).setExceptionMode(ExceptionMode.PASSTHROUGH).intercept { null }
-        }.onSuccess {
-            log(Log.INFO, TAG, "hook $AOD_VIEW#$SHOW_ANIMATE success")
+            hook(method)
+                .setId(HOOK_ID_SHOW_ANIMATE)
+                .setExceptionMode(ExceptionMode.PASSTHROUGH)
+                .intercept { _ ->
+                    // 直接返回 null：不创建 AnimationDrawer，光效不播放。
+                    log(Log.INFO, TAG, "LSM-HOOK-004 event=hook_hit target=$target decision=skip")
+                    null
+                }
+            log(Log.INFO, TAG, "LSM-HOOK-001 event=install_hook target=$target result=ok hook_id=$HOOK_ID_SHOW_ANIMATE")
         }.onFailure {
             installed.set(false)
-            log(Log.ERROR, TAG, "hook $AOD_VIEW#$SHOW_ANIMATE failed: $it")
+            log(Log.ERROR, TAG, "LSM-HOOK-003 event=install_hook target=$target result=fail reason=$it")
         }
     }
 
@@ -166,13 +195,16 @@ class ModuleMain : XposedModule() {
         private const val AOD_VIEW = "com.miui.aod.AODView"
         private const val SHOW_ANIMATE = "showAnimate"
 
-        /** SystemUI 内部类，插件工厂。 */
+        /** SystemUI 内部插件工厂。 */
         private const val PLUGIN_FACTORY =
             "com.android.systemui.shared.plugins.PluginInstance\$PluginFactory"
         private const val CREATE_PLUGIN_CONTEXT = "createPluginContext"
 
         /** MIUI 插件 ClassLoader 注册表（兜底探测用）。 */
         private const val PLUGIN_INJECTOR = "com.miui.systemui.plugin.PluginInstanceInjector"
+
+        private const val HOOK_ID_PLUGIN_FACTORY = "miuiaod_plugin_factory"
+        private const val HOOK_ID_SHOW_ANIMATE = "miuiaod_show_animate"
 
         private const val RESOLVE_DELAY_MS = 100L
         private const val PROBE_INTERVAL_MS = 3_000L

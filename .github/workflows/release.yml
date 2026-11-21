@@ -128,11 +128,11 @@ jobs:
           $diff = git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
             git stash
-            git pull --rebase origin master
+            git pull --rebase origin ${{ github.ref_name }}
             git stash pop
             git add -u
             git commit -m "Update version to ${{ steps.update_version.outputs.final_version }} (code ${{ steps.update_version.outputs.version_code }}) [ci skip]"
-            git push origin master
+            git push origin HEAD:${{ github.ref_name }}
           } else {
             Write-Host "无版本变更"
           }

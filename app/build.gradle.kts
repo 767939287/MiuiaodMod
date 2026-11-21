@@ -16,18 +16,25 @@ android {
         versionName = "0.8.1"
     }
 
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+
     signingConfigs {
         create("release") {
             storeFile = file("../release.keystore")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            storePassword = keystorePassword
             keyAlias = System.getenv("KEY_ALIAS") ?: "release"
-            keyPassword = System.getenv("KEY_PASSWORD")
+            keyPassword = System.getenv("KEY_PASSWORD") ?: keystorePassword
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            // CI 注入 KEYSTORE_PASSWORD 时使用正式签名；本地无密码时回退 debug 签名（仅测试用）。
+            signingConfig = if (keystorePassword != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
