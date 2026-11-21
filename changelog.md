@@ -1,5 +1,18 @@
 # 更新日志
 
+## 0.8.2
+
+> 发布于 2026-11-21
+
+### 新增
+
+- **关闭 AOD 通知光效**：新增 `com.miui.aod` 通知光效 Hook，替换 `AODView#showAnimate`，通知到来时不再播放光效图标动画。该逻辑运行在 SystemUI 插件进程中，默认开启。
+- **作用域**：新增 `com.android.systemui`、`com.miui.aod`。
+
+### 变更
+
+- **项目更名**：包名 `cn.ianzb.miuixguitemplate` → `cn.darknight.miuiaodmod`，工程名、显示名、主题名与远程偏好分组统一为 `MiuiaodMod` / `miuiaodmod_*`。
+
 ## 0.8.1
 
 > 发布于 2026-11-20
