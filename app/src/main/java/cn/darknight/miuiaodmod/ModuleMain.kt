@@ -3,6 +3,7 @@ package cn.darknight.miuiaodmod
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import io.github.libxposed.api.XposedInterface.ExceptionMode
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
@@ -14,101 +15,99 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ## 目标
  * 关闭息屏显示（AOD）在通知到来时播放的光效动画。
  *
- * ## 为什么 hook 的是 SystemUI
- * `com.miui.aod` 的 `DozeService` 实现的是
- * `com.android.systemui.plugins.DozeServicePlugin`，以 **SystemUI 插件**的形式加载
- * （`PluginApplication` / `DozeServicePluginImpl`）。因此真正的运行进程是
- * `com.android.systemui`，`com.miui.aod.*` 的类由插件独立 ClassLoader 加载，
- * SystemUI 自带的 ClassLoader 取不到。
+ * ## 运行进程
+ * `com.miui.aod` 的 `DozeService` 实现 `com.android.systemui.plugins.DozeServicePlugin`，
+ * 由 SystemUI 以插件形式加载，所以 `com.miui.aod.AODView` 实际运行在
+ * **`com.android.systemui`** 进程，且类由插件的独立 ClassLoader 持有。
  *
- * ## 调用链（反编译 `classes.dex` 证据）
- * ```
- * 通知到达 → AODView.scheduleNotificationAnimation()
- *          → AODView.showAnimate(pkg)      // private void
- *          → NotificationStyleManager.createAnimationDrawer(...)
- *          → NotificationAnimationView.startAnimation()
- * ```
- * 替换 `showAnimate` 直接返回，光效既不创建也不播放；通知图标走
- * `handleUpdateIcons()`，不受影响。
+ * ## 安全策略（重要）
+ * 本版本**不 hook 任何类加载热路径**（`ClassLoader.loadClass` 曾导致 SystemUI 崩溃）。
+ * 改为定时探测：
+ * 1. 直接尝试用当前进程 ClassLoader 取 `AODView`；
+ * 2. 读取 MIUI 插件注册表 `PluginInstanceInjector.sClassLoaders` 里的每个 ClassLoader；
+ * 3. 遍历线程上下文的 ClassLoader。
+ * 只有真正取到 `AODView` 后，才对 `showAnimate` 挂钩一次，失败只记日志。
  */
 class ModuleMain : XposedModule() {
 
-    /** 插件 ClassLoader 是否已捕获（防止 `loadClass` 重复命中时重复 post）。 */
-    private val captured = AtomicBoolean(false)
-
     /** 目标方法是否已挂上 hook。 */
     private val installed = AtomicBoolean(false)
+
+    /** 是否已启动探测循环（每个进程一次）。 */
+    private val probing = AtomicBoolean(false)
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         log(Log.INFO, TAG, "onModuleLoaded: ${param.processName}")
     }
 
     override fun onPackageReady(param: PackageReadyParam) {
-        if (param.packageName != SYSTEMUI_PACKAGE) return
-        log(Log.INFO, TAG, "onPackageReady: ${param.packageName}")
+        val pkg = param.packageName
+        if (pkg != SYSTEMUI_PACKAGE && pkg != AOD_PACKAGE) return
+        log(Log.INFO, TAG, "onPackageReady: $pkg")
 
-        // 路径一：插件 dex 已注入当前 classpath（部分 ROM 的加载顺序如此）。
-        val direct = runCatching { Class.forName(AOD_VIEW, false, param.classLoader) }.getOrNull()
-        if (direct != null) {
-            installOnAodView(direct)
-            return
+        val handler = Handler(Looper.getMainLooper())
+
+        // 先试直接取（少数 ROM 插件 dex 挂在主 ClassLoader 上）。
+        probe(pkg, param.classLoader)
+
+        if (!probing.compareAndSet(false, true)) return
+        var round = 0
+        val task = object : Runnable {
+            override fun run() {
+                if (installed.get() || round >= MAX_ROUNDS) {
+                    log(
+                        Log.INFO,
+                        TAG,
+                        "probe finished: installed=${installed.get()}, rounds=$round",
+                    )
+                    return
+                }
+                round++
+                probePluginLoaders(pkg, param.classLoader)
+                handler.postDelayed(this, PROBE_INTERVAL_MS)
+            }
+        }
+        handler.postDelayed(task, PROBE_INTERVAL_MS)
+    }
+
+    /** 遍历可能的插件 ClassLoader 来源。 */
+    private fun probePluginLoaders(pkg: String, ownLoader: ClassLoader) {
+        // 1) MIUI 插件 ClassLoader 注册表（SystemUI 侧）。
+        runCatching {
+            val injector = Class.forName(PLUGIN_INJECTOR, false, ownLoader)
+            val field = injector.getDeclaredField("sClassLoaders")
+            field.isAccessible = true
+            val map = field.get(null) as? Map<*, *> ?: return@runCatching
+            log(Log.INFO, TAG, "plugin loaders: ${map.keys}")
+            for (value in map.values) {
+                (value as? ClassLoader)?.let { probe(pkg, it) }
+            }
+        }.onFailure {
+            log(Log.INFO, TAG, "read $PLUGIN_INJECTOR failed: $it")
         }
 
-        // 路径二：拦截插件 ClassLoader 的类加载。
-        // 回调里只能做字符串比较，绝不能同步调用 loadClass（会递归）。
-        // 同时挂 `loadClass(String)` 与 `loadClass(String, boolean)`：前者内部会调用
-        // 后者，两条都挂可覆盖不同调用方（含 Class.forName 的同进程分支）。
-        hookClassLoaderLoadClass()
-        log(Log.INFO, TAG, "waiting for $AOD_VIEW via ClassLoader hook")
-    }
-
-    private fun hookClassLoaderLoadClass() {
-        val loaderClass = ClassLoader::class.java
+        // 2) 线程上下文 ClassLoader。
         runCatching {
-            val oneArg = loaderClass.getDeclaredMethod("loadClass", String::class.java)
-            hook(oneArg).intercept { chain ->
-                val name = chain.args.getOrNull(0) as? String
-                if (name == AOD_VIEW) captureLoader(chain.thisObject as? ClassLoader)
-                chain.proceed()
+            for (thread in Thread.getAllStackTraces().keys) {
+                thread.contextClassLoader?.let { probe(pkg, it) }
             }
-        }.onFailure { log(Log.ERROR, TAG, "hook loadClass(String) failed: $it") }
-
-        runCatching {
-            val twoArgs = loaderClass.getDeclaredMethod(
-                "loadClass",
-                String::class.java,
-                Boolean::class.javaPrimitiveType!!,
-            )
-            hook(twoArgs).intercept { chain ->
-                val name = chain.args.getOrNull(0) as? String
-                if (name == AOD_VIEW) captureLoader(chain.thisObject as? ClassLoader)
-                chain.proceed()
-            }
-        }.onFailure { log(Log.ERROR, TAG, "hook loadClass(String, boolean) failed: $it") }
+        }
     }
 
-    private fun captureLoader(loader: ClassLoader?) {
-        if (loader == null) return
-        if (!captured.compareAndSet(false, true)) return
-        // 等目标类被真正加载完成后再取类安装，避免在 loadClass 内部递归。
-        Handler(Looper.getMainLooper()).postDelayed({
-            runCatching { Class.forName(AOD_VIEW, false, loader) }
-                .onSuccess { installOnAodView(it) }
-                .onFailure {
-                    // 取不到就放开标志，等下一次加载再试（插件可能被卸载重载）。
-                    captured.set(false)
-                    log(Log.WARN, TAG, "resolve $AOD_VIEW failed: $it")
-                }
-        }, RESOLVE_DELAY_MS)
+    /** 尝试用指定 ClassLoader 取 `AODView`，取到就挂钩。 */
+    private fun probe(pkg: String, loader: ClassLoader) {
+        if (installed.get()) return
+        val clazz = runCatching { Class.forName(AOD_VIEW, false, loader) }.getOrNull() ?: return
+        log(Log.INFO, TAG, "found $AOD_VIEW in $pkg via $loader")
+        install(clazz)
     }
 
-    private fun installOnAodView(clazz: Class<*>) {
+    private fun install(clazz: Class<*>) {
         if (!installed.compareAndSet(false, true)) return
         runCatching {
             val method = clazz.getDeclaredMethod(SHOW_ANIMATE, String::class.java)
-            method.isAccessible = true
             // 直接返回 null，跳过光效的创建与播放。
-            hook(method).intercept { null }
+            hook(method).setExceptionMode(ExceptionMode.PASSTHROUGH).intercept { null }
         }.onSuccess {
             log(Log.INFO, TAG, "hook $AOD_VIEW#$SHOW_ANIMATE success")
         }.onFailure {
@@ -120,8 +119,11 @@ class ModuleMain : XposedModule() {
     companion object {
         private const val TAG = "MiuiaodMod"
         private const val SYSTEMUI_PACKAGE = "com.android.systemui"
+        private const val AOD_PACKAGE = "com.miui.aod"
         private const val AOD_VIEW = "com.miui.aod.AODView"
         private const val SHOW_ANIMATE = "showAnimate"
-        private const val RESOLVE_DELAY_MS = 100L
+        private const val PLUGIN_INJECTOR = "com.miui.systemui.plugin.PluginInstanceInjector"
+        private const val PROBE_INTERVAL_MS = 3_000L
+        private const val MAX_ROUNDS = 40
     }
 }
