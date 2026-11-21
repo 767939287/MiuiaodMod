@@ -22,3 +22,6 @@ local.properties
 
 # 本地逆向样本（不入库）
 /.file/
+
+# 本地技能包（不入库）
+/.github/skills/
