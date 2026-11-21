@@ -12,18 +12,21 @@ android {
         applicationId = "cn.darknight.miuiaodmod"
         minSdk = 35
         targetSdk = 37
-        versionCode = 19
-        versionName = "0.9.0"
+        versionCode = 20
+        versionName = "0.9.1"
     }
 
-    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    // GitHub Actions 未配置的 secret 会传空字符串，必须同时处理 null 与 blank。
+    fun envOrNull(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }
+
+    val keystorePassword = envOrNull("KEYSTORE_PASSWORD")
 
     signingConfigs {
         create("release") {
             storeFile = file("../release.keystore")
             storePassword = keystorePassword
-            keyAlias = System.getenv("KEY_ALIAS") ?: "release"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: keystorePassword
+            keyAlias = envOrNull("KEY_ALIAS") ?: "release"
+            keyPassword = envOrNull("KEY_PASSWORD") ?: keystorePassword
         }
     }
 
