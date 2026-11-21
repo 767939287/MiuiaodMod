@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.9.3
+
+> 发布于 2026-11-21
+
+### 修复
+
+- **恢复 AOD 亮屏**：`showAnimate` 只阻止动画绘制，同时反射调用 `mHost.setNotificationAnimate(true)` / `fireAnimateState()`（延时 1.2s 后复位），模拟原动画结束时机。之前整段 replace 导致来通知时 AOD 不亮。
+
 ## 0.9.2
 
 > 发布于 2026-11-21

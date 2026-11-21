@@ -44,6 +44,9 @@ class ModuleMain : XposedModule() {
     /** 是否已启动兜底探测循环（每个进程一次）。 */
     private val probing = AtomicBoolean(false)
 
+    /** 主线程 Handler，用于延时复位 AOD 动画状态。 */
+    private var mainHandler: Handler? = null
+
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         log(
             Log.INFO,
@@ -68,6 +71,7 @@ class ModuleMain : XposedModule() {
         )
 
         val handler = Handler(Looper.getMainLooper())
+        mainHandler = handler
 
         // 主路径：插件加载时直接拿到插件 ClassLoader。
         hookPluginFactory(param.classLoader, handler)
@@ -177,8 +181,10 @@ class ModuleMain : XposedModule() {
             hook(method)
                 .setId(HOOK_ID_SHOW_ANIMATE)
                 .setExceptionMode(ExceptionMode.PASSTHROUGH)
-                .intercept { _ ->
-                    // 直接返回 null：不创建 AnimationDrawer，光效不播放。
+                .intercept { chain ->
+                    // 不创建 AnimationDrawer、不播放动画，但把原逻辑里的 AOD 显示状态补回去，
+                    // 否则 SystemUI 认为没有通知动画 -> 来通知时 AOD 不亮。
+                    holdAodState(chain.thisObject)
                     log(Log.INFO, TAG, "LSM-HOOK-004 event=hook_hit target=$target decision=skip")
                     null
                 }
@@ -187,6 +193,50 @@ class ModuleMain : XposedModule() {
             installed.set(false)
             log(Log.ERROR, TAG, "LSM-HOOK-003 event=install_hook target=$target result=fail reason=$it")
         }
+    }
+
+    /**
+     * 复刻 `AODView.showAnimate` 中 `if (drawer != null)` 分支里的状态调用：
+     * `mHost.setNotificationAnimate(true)` + `fireAnimateState()`，延时后再复位为 false。
+     * 这样 AOD 会正常亮起并显示通知图标，只是不播放波纹动画。
+     */
+    private fun holdAodState(aodView: Any?) {
+        if (aodView == null) return
+        runCatching {
+            val hostField = findField(aodView.javaClass, "mHost") ?: run {
+                log(Log.WARN, TAG, "LSM-HOOK-007 event=hold_state result=fail reason=no_mHost_field")
+                return@runCatching
+            }
+            val host = hostField.get(aodView) ?: return@runCatching
+            val setAnimate = host.javaClass.methods.firstOrNull {
+                it.name == "setNotificationAnimate" && it.parameterTypes.size == 1
+            } ?: return@runCatching
+            val fireState = host.javaClass.methods.firstOrNull { it.name == "fireAnimateState" }
+
+            setAnimate.invoke(host, true)
+            fireState?.invoke(host)
+
+            mainHandler?.postDelayed({
+                runCatching {
+                    setAnimate.invoke(host, false)
+                    fireState?.invoke(host)
+                }
+            }, HOLD_MS)
+        }.onFailure {
+            log(Log.WARN, TAG, "LSM-HOOK-007 event=hold_state result=fail reason=$it")
+        }
+    }
+
+    /** 沿类继承链查找字段（含 private）。 */
+    private fun findField(cls: Class<*>, name: String): java.lang.reflect.Field? {
+        var current: Class<*>? = cls
+        while (current != null) {
+            runCatching {
+                return current!!.getDeclaredField(name).apply { isAccessible = true }
+            }
+            current = current.superclass
+        }
+        return null
     }
 
     companion object {
@@ -207,6 +257,10 @@ class ModuleMain : XposedModule() {
         private const val HOOK_ID_SHOW_ANIMATE = "miuiaod_show_animate"
 
         private const val RESOLVE_DELAY_MS = 100L
+
+        /** 动画状态的保持时长，模拟原动画结束时机。 */
+        private const val HOLD_MS = 1_200L
+
         private const val PROBE_INTERVAL_MS = 3_000L
         private const val MAX_ROUNDS = 40
     }
