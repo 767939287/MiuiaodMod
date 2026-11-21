@@ -1,7 +1,7 @@
 <!--suppress HtmlDeprecatedAttribute, HtmlDeprecatedTag -->
 <div align="center">
 
-# MiuixGuiTemplate
+# MiuiaodMod
 
 ### 基于 Miuix 的 LSPosed 模块模板
 
@@ -12,7 +12,7 @@
 
 </div>
 
-**MiuixGuiTemplate** 是一个开箱即用的 **LSPosed 模块模板**，基于 [libxposed API 102](https://libxposed.github.io/api/index-all.html) 与 [Miuix](https://github.com/compose-miuix-ui/miuix) Compose 组件库，提供一套完整的 Hook 二次封装接口与可复用 UI 组件，帮助你快速构建自己的 Xposed 模块。
+**MiuiaodMod** 是一个开箱即用的 **LSPosed 模块模板**，基于 [libxposed API 102](https://libxposed.github.io/api/index-all.html) 与 [Miuix](https://github.com/compose-miuix-ui/miuix) Compose 组件库，提供一套完整的 Hook 二次封装接口与可复用 UI 组件，帮助你快速构建自己的 Xposed 模块。
 
 <br>
 
@@ -50,8 +50,8 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/Ianzb/MiuixGuiTemplate.git
-cd MiuixGuiTemplate
+git clone https://github.com/767939287/MiuiaodMod.git
+cd MiuiaodMod
 
 # 设置 JDK 25（CI 使用 temurin 25）和 Android SDK
 # app 模块编译目标为 JVM 21，以使用 miuix-nav 的内联路由 API
@@ -161,16 +161,16 @@ $env:KEY_PASSWORD="你的密钥密码"
 
 # 参考与致谢
 
-MiuixGuiTemplate 是个人 Android 模块开发所使用的脚手架模板，开发过程中参考了若干开源项目与其他模块项目，谨向相关作者与贡献者致谢。具体致谢清单统一维护在应用内「关于 → 第三方许可证与致谢」页面，文档不再逐一展开；参考或复刻第三方项目时的合规流程见 [模块开发工作流](docs/WORKFLOW.md)。
+MiuiaodMod 是个人 Android 模块开发所使用的脚手架模板，开发过程中参考了若干开源项目与其他模块项目，谨向相关作者与贡献者致谢。具体致谢清单统一维护在应用内「关于 → 第三方许可证与致谢」页面，文档不再逐一展开；参考或复刻第三方项目时的合规流程见 [模块开发工作流](docs/WORKFLOW.md)。
 
 <br>
 
 # 使用本模板的项目
 
-基于本模板的衍生项目**无需**在 `README.md` 或应用内「关于」页标注来源。应用内 Logo 下方的 `Based on MiuixGuiTemplate <版本号>` 为**可选项**：保留时建议将版本号更新为所依据的脚手架版本，便于同步脚手架的修复与改进；不保留亦不影响合规。
+基于本模板的衍生项目**无需**在 `README.md` 或应用内「关于」页标注来源。应用内 Logo 下方的 `Based on MiuiaodMod <版本号>` 为**可选项**：保留时建议将版本号更新为所依据的脚手架版本，便于同步脚手架的修复与改进；不保留亦不影响合规。
 
 ```text
-Based on MiuixGuiTemplate <版本号>
+Based on MiuiaodMod <版本号>
 ```
 
 当前使用本模板的项目：

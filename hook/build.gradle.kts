@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "cn.ianzb.miuixguitemplate.hook"
+    namespace = "cn.darknight.miuiaodmod.hook"
     compileSdk {
         version = release(37)
     }

@@ -1,7 +1,7 @@
 name: CI Build
 
 env:
-  PROGRAM_NAME: "MiuixGuiTemplate"
+  PROGRAM_NAME: "MiuiaodMod"
 
 on:
   workflow_dispatch:

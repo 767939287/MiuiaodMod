@@ -62,7 +62,7 @@
 - **手机搜索条位置偏低**：参照 miuix 的 GlassPage 示例，搜索条与页面顶栏共用顶部安全区，重叠的状态栏和挖孔留白只计算一次。
 - **卡片分组间距**：统一组间留白，修复主页状态卡片与「设备信息」标题之间的间距偏小。
 - **更新弹窗 Markdown 渲染**：当前版本日志与新版本发布说明共用 Markdown 渲染，支持标题、列表、强调、行内代码和链接，长日志可滚动查看。
-- **项目与更新链接**：应用内项目地址、更新检查和 README 克隆命令指向 `Ianzb/MiuixGuiTemplate`。
+- **项目与更新链接**：应用内项目地址、更新检查和 README 克隆命令指向 `767939287/MiuiaodMod`。
 - **启动即闪退（RenderNode 栈溢出）**：玻璃顶栏若采样「包含顶栏自身」的图层，会触发 `RenderNode::prepareTreeImpl` 与 `SkiaDisplayList::prepareListAndChildren` 成对无限递归，表现为启动首帧 `SIGSEGV` / `stack pointer is not in a rw map`。现改为顶栏只采样页面内容层（见上条），并在 `pagerContent` 中把整页 backdrop 固定为 `null` 作为安全网。
 - **主页没有渐变模糊**：主页内容不足一屏时 `LazyColumn` 无法滚动，`GlassTopAppBar` 的渐进模糊强度由滚动偏移驱动，`ramp` 恒为 0，条带永不出现。现拆卡并新增「快捷入口」卡片，主页可滚动后顶栏渐变模糊/标题渐显恢复正常。
 - **侧栏遮挡页面内容**：此前把留白加在 `HorizontalPager` 上，导致侧栏展开/收起过程中与页面内容错位。现改为页面级 inset；且留白来源从 `animateDpAsState(tween(300))` 改为 `GlassNavigationRailState.progress`，与侧栏形变逐帧同步，不再出现面板已展开而内容尚未让位的遮挡。
@@ -235,7 +235,7 @@
 - **精简包体**：移除体积巨大的 `material-icons-extended`（约 83MB 的类），改用 `material-icons-core`，并在 `ui/icons/StatusIcons.kt` 内联原本使用的 3 个 Rounded 图标（外观不变）。（注意： **不要开启 R8 混淆**，它会破坏 libxposed 模块的加载与 Hook）
 - **示例页 → 功能页**：`ui/screen/examples/ExamplesPage.kt` 更名为 `ui/screen/features/FeaturesPage.kt`（`ExamplesPageView` → `FeaturesPageView`、`exampleSpecs` → `featureSpecs`、子页 `ExampleSubPageActivity` → `FeatureSubPageActivity`），标签页「示例」改为「功能」，与真实模块形态一致；功能页小标题改为单语言，`HookSection.titleEn` 仅保留用于示例展示 API 英文组件名
 - 搜索文案由「搜索组件」改为「搜索功能」（`search_hint`），同步更新二次开发指南与接口文档
-- **许可要求调整**：衍生项目只需在应用内「关于」页保留 `Based on MiuixGuiTemplate <版本号>` 标注， **不再要求**在各自的 `README.md` 中强调；同步更新 README、二次开发指南与示例注释
+- **许可要求调整**：衍生项目只需在应用内「关于」页保留 `Based on MiuiaodMod <版本号>` 标注， **不再要求**在各自的 `README.md` 中强调；同步更新 README、二次开发指南与示例注释
 - 关于页「反馈渠道」文案改为「Telegram 群组」（英文 `Telegram Group`），并强调不要在文档 / 界面中只写「反馈渠道 / 反馈方式」，以免用户看不出是 TG 群组
 - **Telegram 话题推送**：`release.yml` 支持可选 Secret `MESSAGE_THREAD_ID`，多话题群（Forum）可指定发布到哪个话题（不填则发默认 / General 话题）
 - **移除热重载功能**：删除设置页「全局热重载」、作用域页与重启应用入口中的热重载，以及 `XposedServiceManager.hotReload` / `runningTargets`、`NativeHookHelper.reset`、`PackageTarget.restored`、`XposedEntry` 的 `onHotReloading` / `onHotReloaded` 与 `module.prop` 的 `autoHotReload`；保留「重启」功能（含 SystemUI 重启优化）
@@ -278,7 +278,7 @@
 ### 新增
 
 - **参考与致谢**：README 与应用内说明本模板的脚手架定位，并致谢参考项目（具体清单见应用内「第三方许可证与致谢」页）
-- **Based on 约定**：衍生项目须在 `README.md` 与「关于」页标注 `Based on MiuixGuiTemplate <版本号>`；示例程序已内建该标注（当前为 `Based on MiuixGuiTemplate 0.3.0`）
+- **Based on 约定**：衍生项目须在 `README.md` 与「关于」页标注 `Based on MiuiaodMod <版本号>`；示例程序已内建该标注（当前为 `Based on MiuiaodMod 0.3.0`）
 - `docs/CUSTOMIZE.md` 新增「开源协议与致谢（必读）」核对清单，二次开发可一次性对照完成
 
 ## 0.2.0

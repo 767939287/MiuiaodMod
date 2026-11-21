@@ -25,14 +25,14 @@ androidComponents.onVariants { variant ->
 }
 
 android {
-    namespace = "cn.ianzb.miuixguitemplate"
+    namespace = "cn.darknight.miuiaodmod"
     compileSdk {
         // miuix 0.9.5 的 AAR 要求 compileSdk 至少为 Android 37.2。
         version = release(37) { minorApiLevel = 2 }
     }
 
     defaultConfig {
-        applicationId = "cn.ianzb.miuixguitemplate"
+        applicationId = "cn.darknight.miuiaodmod"
         minSdk = 35
         targetSdk = 37
         versionCode = 18

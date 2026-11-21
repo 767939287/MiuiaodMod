@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MiuixGuiTemplate</string>
+    <string name="app_name">MiuiaodMod</string>
     <string name="tab_home">主页</string>
     <string name="tab_features">功能</string>
     <string name="tab_settings">设置</string>
@@ -214,11 +214,11 @@
     <!-- About -->
     <string name="about">关于</string>
     <string name="about_source_code">项目地址</string>
-    <string name="about_source_code_summary" translatable="false">https://github.com/Ianzb/MiuixGuiTemplate</string>
+    <string name="about_source_code_summary" translatable="false">https://github.com/767939287/MiuiaodMod</string>
     <string name="about_telegram">Telegram 群组</string>
     <string name="about_telegram_summary">https://t.me/your-channel</string>
     <string name="about_dependencies">第三方许可证与致谢</string>
-    <string name="about_based_on">Based on MiuixGuiTemplate 0.8.0</string>
+    <string name="about_based_on">MiuiaodMod 0.8.1</string>
     <string name="license_agpl">GNU AGPL v3.0</string>
     <string name="license_agpl_summary">查看完整协议文本</string>
     <string name="third_party_licenses_title">第三方许可证与致谢</string>

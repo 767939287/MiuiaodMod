@@ -166,7 +166,7 @@ cargo ndk -t arm64-v8a -t armeabi-v7a -t x86_64 \
 
 原生 Hook 由 Rust 库实现，但「声明 / 加载 / 开关 / 状态 / 安全模式 / 版本筛选」全部由 Kotlin 封装接管，用法与 JavaHook 对称。
 
-包名：`cn.ianzb.miuixguitemplate.hook.nativehook`
+包名：`cn.darknight.miuiaodmod.hook.nativehook`
 
 ```kotlin
 // 声明一条原生规则：只需要库名

@@ -19,3 +19,6 @@ local.properties
 
 # 逆向分析产物（本地保留，不入库）
 /reverse_report/
+
+# 本地逆向样本（不入库）
+/.file/

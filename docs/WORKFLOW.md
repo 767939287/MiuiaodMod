@@ -214,7 +214,7 @@
 | 采用（官方英文） | 不要写成 | 说明 |
 |---|---|---|
 | `HyperOS`（`HyperOS 4`） | `Hyper OS` | 系统名 |
-| `MiuixGuiTemplate` | `Miuix Gui Template` | 模板名，`app_name` 不翻译；衍生项目替换为自己的名称 |
+| `MiuiaodMod` | `Miuix Gui Template` | 模板名，`app_name` 不翻译；衍生项目替换为自己的名称 |
 | `Xiaomi Smart Hub` | `Fusion Device Center` | 融合设备中心 |
 | `Home screen+` | `Mi Share Desktop` | 妙享桌面（跨设备桌面） |
 | `app handoff` | `cross-device streaming` | 应用流转 |

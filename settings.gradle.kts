@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MiuixGuiTemplate"
+rootProject.name = "MiuiaodMod"
 include(":app")
 include(":hook")

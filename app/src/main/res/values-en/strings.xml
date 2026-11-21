@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MiuixGuiTemplate</string>
+    <string name="app_name">MiuiaodMod</string>
     <string name="tab_home">Home</string>
     <string name="tab_features">Features</string>
     <string name="tab_settings">Settings</string>
@@ -217,7 +217,7 @@
     <string name="about_telegram">Telegram Group</string>
     <string name="about_telegram_summary">https://t.me/your-channel</string>
     <string name="about_dependencies">Third Party Licenses &amp; Credits</string>
-    <string name="about_based_on">Based on MiuixGuiTemplate 0.8.0</string>
+    <string name="about_based_on">MiuiaodMod 0.8.1</string>
     <string name="license_agpl">GNU AGPL v3.0</string>
     <string name="license_agpl_summary">View full license text</string>
     <string name="third_party_licenses_title">Third Party Licenses &amp; Credits</string>

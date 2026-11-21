@@ -2,7 +2,7 @@
 
 本文档说明以本模板为基础开发自己的 LSPosed 模块时，**需要修改的全部内容**：应用标识、图标、链接、模块元数据、Hook 代码、配置项与页面等。
 
-> 约定：本文中的路径均相对于项目根目录。改完建议全局搜索 `cn.ianzb.miuixguitemplate`、`MiuixGuiTemplate`、`miuix_template` 确保没有遗漏。
+> 约定：本文中的路径均相对于项目根目录。改完建议全局搜索 `cn.darknight.miuiaodmod`、`MiuiaodMod`、`miuiaodmod` 确保没有遗漏。
 
 ---
 
@@ -18,9 +18,9 @@
 | 应用名 | `res/values/strings.xml`、`res/values-en/strings.xml` → `app_name` |                                                     |
 | 应用图标 | `res/drawable/ic_launcher_*.xml`、`res/mipmap-anydpi*/ic_launcher*.xml`、`colors.xml` → `ic_launcher_background` |                                                     |
 | 关于页链接 | `strings.xml` → `about_source_code_summary`、`about_telegram_summary` | 展示与跳转均使用该值；`about_telegram` 的文案**须明确写「Telegram 群组」**（不要只写「反馈渠道 / 反馈方式」，否则用户不知道这是 TG 群组） |
-| 检查更新仓库 | `app/.../UpdateChecker.kt` → `REPO` | 派生项目应换成自己的 GitHub 仓库（`owner/repo`）；默认查询 `Ianzb/MiuixGuiTemplate` 的 Releases |
+| 检查更新仓库 | `app/.../UpdateChecker.kt` → `REPO` | 派生项目应换成自己的 GitHub 仓库（`owner/repo`）；默认查询 `767939287/MiuiaodMod` 的 Releases |
 | 版权 | `strings.xml` → `copyright` |                                                     |
-| Based on 标注（可选） | `strings.xml` → `about_based_on` | 应用内「关于」页可保留 `Based on MiuixGuiTemplate <版本号>` 并更新为所依据的脚手架版本，也可删除；见第 11.2 节 |
+| Based on 标注（可选） | `strings.xml` → `about_based_on` | 应用内「关于」页可保留 `Based on MiuiaodMod <版本号>` 并更新为所依据的脚手架版本，也可删除；见第 11.2 节 |
 | 参考与致谢 | 应用内 `LicensePage.kt` → `licenses_section_refs` | 保留对参考项目的致谢（可增不可删），文档不展开具体借鉴说明 |
 | 开源协议 | 根目录 `LICENSE`、`README.md`「许可证」、`strings.xml` → `license_agpl*` | **须保持 AGPL-3.0**，见第 11 节            |
 | 许可证列表 | `ui/screen/about/LicensePage.kt` → `licenseSections` | 增删依赖库                                               |
@@ -68,9 +68,9 @@ android {
 
 ### 1.2 源码包重命名
 
-1. 将 `app/src/main/java/cn/ianzb/miuixguitemplate/` 重命名为 `com/yourname/yourmodule/`；
-2. 将 `hook/src/main/java/cn/ianzb/miuixguitemplate/hook/` 重命名为 `com/yourname/yourmodule/hook/`；
-3. 全局替换 `cn.ianzb.miuixguitemplate` → `com.yourname.yourmodule`（IDE 的 Rename Package 或全量搜索替换）。
+1. 将 `app/src/main/java/cn/darknight/miuiaodmod/` 重命名为 `com/yourname/yourmodule/`；
+2. 将 `hook/src/main/java/cn/darknight/miuiaodmod/hook/` 重命名为 `com/yourname/yourmodule/hook/`；
+3. 全局替换 `cn.darknight.miuiaodmod` → `com.yourname.yourmodule`（IDE 的 Rename Package 或全量搜索替换）。
 
 > `AndroidManifest.xml` 中的 Activity 使用相对类名（如 `.TemplateApp`、`.MainActivity`），包名变更后无需手动改。
 
@@ -110,7 +110,7 @@ android {
 
 ```xml
 <string name="about_source_code">项目地址</string>
-<string name="about_source_code_summary" translatable="false">https://github.com/Ianzb/MiuixGuiTemplate</string>
+<string name="about_source_code_summary" translatable="false">https://github.com/767939287/MiuiaodMod</string>
 <string name="about_telegram">Telegram 群组</string>
 <string name="about_telegram_summary">https://t.me/yourchannel</string>
 <string name="copyright">© 2026 Your Name.</string>
@@ -221,14 +221,14 @@ class MyHook : BaseHook() {
 
 ### 6.4 配置分组名（保持两端一致）
 
-- `hook/.../prefs/HookPrefs.kt` → `GROUP = "miuix_template_remote"`
-- `app/.../prefs/PrefsStore.kt` → `REMOTE_GROUP = "miuix_template_remote"`
+- `hook/.../prefs/HookPrefs.kt` → `GROUP = "miuiaodmod_remote"`
+- `app/.../prefs/PrefsStore.kt` → `REMOTE_GROUP = "miuiaodmod_remote"`
 
 > 两个常量**必须一致**，否则 Hook 进程读不到 App 写入的配置。
 
 ### 6.5 DexKit 缓存目录（可选）
 
-`hook/.../dexkit/DexKitCacheManager.kt` → `CACHE_DIR = "miuix_template"`。
+`hook/.../dexkit/DexKitCacheManager.kt` → `CACHE_DIR = "miuiaodmod"`。
 
 > 该目录用于清空缓存时的路径拼接，改名后 App 端 `RootHelper.deleteDexKitCache(scope, DexKitCacheManager.CACHE_DIR)` 会自动使用新值。
 > 清空缓存需要 Root，但**无需在文案中说明**——主页「模块状态」卡片已标注是否具备 Root。
@@ -368,14 +368,14 @@ HookOptionsPage(
 
 | 文件 | 说明 |
 |---|---|
-| `res/values/themes.xml` | 应用主题（`Theme.MiuixGuiTemplate`），并设置启动窗口背景 |
+| `res/values/themes.xml` | 应用主题（`Theme.MiuiaodMod`），并设置启动窗口背景 |
 | `res/values-night/themes.xml` | 深色模式主题（深色窗口背景），避免启动白屏闪烁 |
 | `res/values/colors.xml` → `window_background` | 浅色启动窗口背景（默认 `#FFF7F7F7`） |
 | `res/values-night/colors.xml` → `window_background` | 深色启动窗口背景（默认 `#FF000000`，与 Miuix 深色 surface 一致） |
 | `res/values/colors.xml` | 基础颜色与 `ic_launcher_background` |
 | `ui/theme/Theme.kt` | `AppTheme`（Miuix 主题、深浅色、系统栏图标），一般无需修改 |
 
-> 若要改主题名，请同步替换 `AndroidManifest.xml` 与 `themes.xml` 中的 `Theme.MiuixGuiTemplate`。
+> 若要改主题名，请同步替换 `AndroidManifest.xml` 与 `themes.xml` 中的 `Theme.MiuiaodMod`。
 >
 > `window_background` 必须与页面实际背景（Miuix 主题的 `surface`：浅色 `0xFFF7F7F7`、深色 `0xFF000000`）一致，否则冷启动瞬间会闪现底色。`MainActivity` 还会按应用内主题模式（含手动强制深/浅色）动态覆盖窗口背景，覆盖逻辑见 `ui/util/WindowBackground.kt`。
 
@@ -399,7 +399,7 @@ HookOptionsPage(
 
 ## 10. 修改后自检
 
-1. 全局搜索 `cn.ianzb.miuixguitemplate`、`MiuixGuiTemplate`、`miuix_template`、`your-channel`，确认已按派生项目需求替换。
+1. 全局搜索 `cn.darknight.miuiaodmod`、`MiuiaodMod`、`miuiaodmod`、`your-channel`，确认已按派生项目需求替换。
 2. `HookPrefs.GROUP` 与 `PrefsStore.REMOTE_GROUP` 一致。
 3. `scope.list` 已包含所有 `BaseLoad.targetPackages`。
 4. `META-INF/xposed/java_init.list` 指向正确的入口类。
@@ -423,7 +423,7 @@ HookOptionsPage(
 
 ### 11.2 Based on 标注（可选）
 
-应用内「关于」页 Logo 下方的 `Based on MiuixGuiTemplate <版本号>`（`strings.xml` → `about_based_on`）为**可选标注**：衍生项目可保留并将版本号更新为所依据的脚手架版本（便于同步脚手架的修复与改进），也可直接删除，均不影响开源协议合规。
+应用内「关于」页 Logo 下方的 `Based on MiuiaodMod <版本号>`（`strings.xml` → `about_based_on`）为**可选标注**：衍生项目可保留并将版本号更新为所依据的脚手架版本（便于同步脚手架的修复与改进），也可直接删除，均不影响开源协议合规。
 
 | 落点 | 文件 | 是否必须 |
 |---|---|---|

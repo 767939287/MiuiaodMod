@@ -1,4 +1,4 @@
-# MiuixGuiTemplate 接口文档
+# MiuiaodMod 接口文档
 
 本文档描述模板对外暴露的全部接口，按模块划分：Hook 封装、DexKit 缓存、配置系统、服务与状态、UI 组件、二级页面模板，以及接入步骤。
 
@@ -23,7 +23,7 @@
 
 ## 1. Hook 封装（`:hook`）
 
-包名：`cn.ianzb.miuixguitemplate.hook`
+包名：`cn.darknight.miuiaodmod.hook`
 
 模板把 Hook 分为两类，命名与落点严格区分：
 
@@ -191,7 +191,7 @@ class PackageTarget(
 
 ### 1.10 原生 Hook 封装
 
-包名：`cn.ianzb.miuixguitemplate.hook.nativehook`。与 [1.1 `HookHelper`](#11-hookhelper) 对称，负责把原生库「声明 / 加载 / 开关 / 状态」接进模板链路；真正的 hook 由原生库导出的 `native_init` 完成。完整原理与工作流见 [原生 Hook 指南](NATIVE_HOOK.md)。
+包名：`cn.darknight.miuiaodmod.hook.nativehook`。与 [1.1 `HookHelper`](#11-hookhelper) 对称，负责把原生库「声明 / 加载 / 开关 / 状态」接进模板链路；真正的 hook 由原生库导出的 `native_init` 完成。完整原理与工作流见 [原生 Hook 指南](NATIVE_HOOK.md)。
 
 ```kotlin
 data class NativeLibrarySpec(
@@ -239,7 +239,7 @@ class MyLoad : BaseLoad() {
 
 ### 1.11 版本筛选（`HookVersionGate`）
 
-包名：`cn.ianzb.miuixguitemplate.hook.rule`。为所有 Hook 封装（JavaHook 与 NativeHook）提供统一的版本筛选，支持 `>` `<` 比较、多重规则（AND / OR），可按 **Android / HyperOS / MIUI / 指定应用版本** 应用不同 Hook 代码。
+包名：`cn.darknight.miuiaodmod.hook.rule`。为所有 Hook 封装（JavaHook 与 NativeHook）提供统一的版本筛选，支持 `>` `<` 比较、多重规则（AND / OR），可按 **Android / HyperOS / MIUI / 指定应用版本** 应用不同 Hook 代码。
 
 ```kotlin
 // 1) 整体门禁：不满足则整条规则跳过（不安装、不记录失败）
@@ -275,7 +275,7 @@ override val variants = listOf(
 
 ### 1.12 设备筛选（`DeviceScope`）
 
-包名：`cn.ianzb.miuixguitemplate.hook.device`。所有 Hook 封装默认**各设备通用**；需要按设备区分时声明 `deviceScope`（白名单），不匹配即跳过该规则（不安装、不记录失败）。
+包名：`cn.darknight.miuiaodmod.hook.device`。所有 Hook 封装默认**各设备通用**；需要按设备区分时声明 `deviceScope`（白名单），不匹配即跳过该规则（不安装、不记录失败）。
 
 ```kotlin
 // JavaHook
@@ -312,7 +312,7 @@ hook 代码内需要按设备分支时，直接读 `DeviceContext.current.type`�
 
 ## 2. DexKit 缓存（`:hook`）
 
-包名：`cn.ianzb.miuixguitemplate.hook.dexkit`
+包名：`cn.darknight.miuiaodmod.hook.dexkit`
 
 ### 2.1 `DexKit`
 
@@ -344,7 +344,7 @@ fun interface IDexKitList {
 
 ```kotlin
 object DexKitCacheManager {
-    const val CACHE_DIR = "miuix_template"
+    const val CACHE_DIR = "miuiaodmod"
     const val CACHE_FILE = "dexkit_cache.json"
 
     fun init(target: PackageTarget, tag: String)
@@ -356,7 +356,7 @@ object DexKitCacheManager {
 }
 ```
 
-缓存文件位于目标应用 `dataDir/cache/miuix_template/dexkit_cache.json`，带 `version / pkgVersion / osVersion` 失效校验与文件锁。
+缓存文件位于目标应用 `dataDir/cache/miuiaodmod/dexkit_cache.json`，带 `version / pkgVersion / osVersion` 失效校验与文件锁。
 
 ### 2.4 在 `BaseHook` 中使用
 
@@ -389,7 +389,7 @@ App 侧通过 `RootHelper.deleteDexKitCache(scope, DexKitCacheManager.CACHE_DIR)
 
 ## 3. 配置系统（`:app`）
 
-包名：`cn.ianzb.miuixguitemplate.prefs`
+包名：`cn.darknight.miuiaodmod.prefs`
 
 ### 3.1 `OptionSpec`（组件声明）
 
@@ -455,8 +455,8 @@ object OptionRegistry {
 
 ```kotlin
 object PrefsStore {
-    const val PREFS_NAME = "miuix_template_prefs"
-    const val REMOTE_GROUP = "miuix_template_remote"   // 与 :hook HookPrefs.GROUP 一致
+    const val PREFS_NAME = "miuiaodmod_prefs"
+    const val REMOTE_GROUP = "miuiaodmod_remote"   // 与 :hook HookPrefs.GROUP 一致
 
     fun init(context: Context)
     fun attachRemote(remotePrefs: SharedPreferences?)  // 服务绑定后调用，并同步本地→远程
@@ -506,7 +506,7 @@ object ConfigBackup {
 
 ```kotlin
 object HookPrefs {
-    const val GROUP = "miuix_template_remote"
+    const val GROUP = "miuiaodmod_remote"
     fun init(remote: SharedPreferences)
     fun getBoolean(key: String, defaultValue: Boolean = false): Boolean
     fun getInt(key: String, defaultValue: Int = 0): Int
@@ -527,7 +527,7 @@ object HookPrefs {
 
 ## 4. 服务与状态（`:app`）
 
-包名：`cn.ianzb.miuixguitemplate.xposed`
+包名：`cn.darknight.miuiaodmod.xposed`
 
 ### 4.1 `XposedServiceManager`
 
@@ -580,11 +580,11 @@ object AppRestarter {
 
 ### 4.4 `SafeModeReader`（Hook 兜底 / 安全模式）
 
-Hook 进程通过 `:hook` 的 `SafeModeManager` 把崩溃记录写入远程偏好分组 `miuix_template_safe_mode`，App 侧读取并支持重置。
+Hook 进程通过 `:hook` 的 `SafeModeManager` 把崩溃记录写入远程偏好分组 `miuiaodmod_safe_mode`，App 侧读取并支持重置。
 
 ```kotlin
 object SafeModeReader {
-    const val GROUP = "miuix_template_safe_mode"   // 与 :hook SafeModeManager.GROUP 一致
+    const val GROUP = "miuiaodmod_safe_mode"   // 与 :hook SafeModeManager.GROUP 一致
     var safeModePackages: Set<String>              // Compose 可观察：被自动禁用的包
     fun attach(service: XposedService?)            // 服务绑定/断开时调用
     fun refresh()
@@ -679,7 +679,7 @@ fun rememberHookStatus(spec: OptionSpec): HookStatus   // 见 5.3
 
 ## 5. UI 组件（`:app`）
 
-包名：`cn.ianzb.miuixguitemplate.ui.component.pref`
+包名：`cn.darknight.miuiaodmod.ui.component.pref`
 
 所有组件均基于 Miuix 组件库，并接入配置系统、多语言、依赖绑定、设备形态白名单与全局搜索。
 
@@ -1104,7 +1104,7 @@ val width = if (available > 400.dp) 344.dp + actionWidth else maxWidth
 
 ## 6. 二级页面模板
 
-包名：`cn.ianzb.miuixguitemplate.ui.component` / `...ui.screen.subpage`
+包名：`cn.darknight.miuiaodmod.ui.component` / `...ui.screen.subpage`
 
 ### 6.1 `SubPageScaffold`
 
@@ -1202,7 +1202,7 @@ class MySubPageActivity : BaseSubPageActivity() {
 ```xml
 <activity android:name=".ui.screen.mysub.MySubPageActivity"
     android:exported="false"
-    android:theme="@style/Theme.MiuixGuiTemplate" />
+    android:theme="@style/Theme.MiuiaodMod" />
 ```
 
 > 若希望子页面（及其嵌套子页面）内的功能也能被全局搜索命中，在功能页 `HookOptionsPage(subPages = ...)` 中传入 `HookSubPage(titleRes, specs, onOpen, subPages = ...)`；子页面自身不再需要任何搜索入口（见 5.4、5.10）。
