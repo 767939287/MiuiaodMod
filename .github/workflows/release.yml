@@ -238,6 +238,15 @@ jobs:
           EVENT_NAME: "${{ github.event_name }}"
           MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_THREAD_ID }}
         run: |
+          if [ -z "${CHANNEL_ID}" ] || [ -z "${BOT_TOKEN}" ]; then
+            echo "未配置 CHANNEL_ID / BOT_TOKEN，跳过 Telegram 上传"
+            exit 0
+          fi
+          if [ ! -f "${APK_FILE}" ]; then
+            echo "APK 不存在：${APK_FILE}，跳过 Telegram 上传"
+            exit 0
+          fi
+
           ESCAPED_CAPTION=$(python3 -c '
           import os, re
 
