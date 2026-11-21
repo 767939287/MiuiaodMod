@@ -6,6 +6,7 @@ import cn.darknight.miuiaodmod.hook.base.BaseHook
 import cn.darknight.miuiaodmod.hook.base.BaseLoad
 import cn.darknight.miuiaodmod.hook.base.PackageTarget
 import cn.darknight.miuiaodmod.hook.prefs.HookPrefs
+import cn.darknight.miuiaodmod.hook.xposed.BeforeHook
 import cn.darknight.miuiaodmod.hook.xposed.HookHelper
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -88,7 +89,7 @@ class MiuiaodNotificationEffectHook : BaseHook() {
             ClassLoader::class.java,
             "loadClass",
             String::class.java,
-            Boolean::class.javaPrimitiveType,
+            Boolean::class.javaPrimitiveType!!,
             callback = onLoadClass,
         )
         HookHelper.log("$tag: waiting for $AOD_VIEW via ClassLoader hook")
