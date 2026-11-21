@@ -21,7 +21,6 @@ android {
 dependencies {
     compileOnly(libs.libxposed.api)
     api(libs.libxposed.service)
-    api(libs.dexkit)
 
     testImplementation(libs.junit)
     // JVM 单测使用真实 org.json 实现（Android 桩里未 mock）

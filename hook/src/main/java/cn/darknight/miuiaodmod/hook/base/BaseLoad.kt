@@ -1,6 +1,5 @@
 package cn.darknight.miuiaodmod.hook.base
 
-import cn.darknight.miuiaodmod.hook.dexkit.DexKitCacheManager
 import cn.darknight.miuiaodmod.hook.nativehook.BaseNativeHook
 import cn.darknight.miuiaodmod.hook.rule.HookSkippedException
 import cn.darknight.miuiaodmod.hook.rule.VersionContext
@@ -45,12 +44,6 @@ abstract class BaseLoad {
         runCatching { onPackageLoaded(target) }
             .onFailure { HookHelper.log("onPackageLoaded failed: ${target.packageName}", it) }
 
-        val needsDexKit = pendingHooks.any { it.second && it.first.useDexKit() }
-        if (needsDexKit && !target.isSystemServer && target.applicationInfo != null) {
-            runCatching { DexKitCacheManager.init(target, target.packageName) }
-                .onFailure { HookHelper.log("DexKit init failed: ${target.packageName}", it) }
-        }
-
         pendingHooks.forEach { (hook, enabled) ->
             if (enabled) install(hook)
         }
@@ -61,7 +54,6 @@ abstract class BaseLoad {
 
         // 生效状态由 XposedEntry 在本包全部 Load 完成后统一上报：
         // 每个进程只发一次广播（作为一次进程启动证据），多 Load 时不会互相顶掉。
-        if (needsDexKit) runCatching { DexKitCacheManager.releaseBridge() }
     }
 
     private fun install(hook: BaseHook) {
@@ -69,19 +61,6 @@ abstract class BaseLoad {
         val keys = listOf(hook.key)
         keys.forEach { HookStatusReporter.markEvaluated(it) }
         try {
-            if (hook.useDexKit()) {
-                hook.dexKitInitInProgress = true
-                val ok = try {
-                    hook.initDexKit()
-                } finally {
-                    hook.dexKitInitInProgress = false
-                }
-                if (!ok) {
-                    HookHelper.log("${hook.tag} skipped: initDexKit returned false")
-                    keys.forEach { HookStatusReporter.markFailed(it) }
-                    return
-                }
-            }
             val variant = hook.apply(target)
             HookHelper.log("${hook.tag} hook success${variant?.let { " [$it]" } ?: ""} @ ${target.packageName}")
             keys.forEach { HookStatusReporter.markInstalled(it) }
